@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="手元の現金と当日券の売上を、すばやく照合します。">
+    <meta name="theme-color" content="#f2f2f2" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#212121" media="(prefers-color-scheme: dark)">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="当日券集計">
+    <title>現金・当日券 集計</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">EVENT CLOSE</p>
+          <h1>現金・当日券 集計</h1>
+          <p class="intro">手元の現金と当日券の売上を、すばやく照合します。</p>
+        </div>
+        <button id="reset-button" class="reset-button" type="button">リセット</button>
+      </header>
+
+      <section class="card" aria-labelledby="cash-heading">
+        <div class="section-heading">
+          <div>
+            <span class="step-number">01</span>
+            <h2 id="cash-heading">現金集計</h2>
+          </div>
+          <span class="section-note">枚数を入力</span>
+        </div>
+        <div class="table-header" aria-hidden="true">
+          <span>金種</span>
+          <span>枚数</span>
+          <span>小計</span>
+        </div>
+        <div id="cash-rows"></div>
+      </section>
+
+      <div class="total-card cash-total-card">
+        <span>現金合計</span>
+        <strong id="cash-total">0円</strong>
+      </div>
+
+      <section class="card" aria-labelledby="ticket-heading">
+        <div class="section-heading">
+          <div>
+            <span class="step-number">02</span>
+            <h2 id="ticket-heading">当日券集計</h2>
+          </div>
+          <button id="add-ticket-button" class="add-ticket-button" type="button">＋ 券種を追加</button>
+        </div>
+        <div id="ticket-rows" class="ticket-rows"></div>
+      </section>
+
+      <div class="total-card ticket-total-card">
+        <span>当日券売上合計</span>
+        <strong id="ticket-total">0円</strong>
+      </div>
+
+      <section id="result-card" class="result-card is-match" aria-live="polite">
+        <span class="result-label">照合結果</span>
+        <div class="result-message-row">
+          <span class="result-icon" aria-hidden="true"><span id="result-icon" class="result-icon-glyph">✓</span></span>
+          <strong id="result-message">金額が一致しています</strong>
+        </div>
+        <p>差額 <span id="difference">0円</span></p>
+      </section>
+
+      <section id="suggestions-card" class="suggestions-card" aria-labelledby="suggestions-heading" hidden>
+        <div class="suggestions-heading">
+          <div><span class="step-number">03</span><h2 id="suggestions-heading">入力ずれの候補</h2></div>
+          <span id="suggestions-count" class="suggestions-count"></span>
+        </div>
+        <p id="suggestions-lead" class="suggestions-lead"></p>
+        <ol id="suggestions-list" class="suggestions-list"></ol>
+        <p id="suggestions-empty" class="suggestions-empty" hidden></p>
+      </section>
+
+      <p class="save-note"><span aria-hidden="true">●</span> 入力内容はこの端末に自動保存されます</p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
