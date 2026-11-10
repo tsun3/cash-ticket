@@ -3,6 +3,7 @@
   --bg: #f2f2f2;
   --glow: rgba(0, 0, 0, 0.08);
   --surface: #ffffff;
+  --band: #fafafa;
   --ink: #111111;
   --muted: #686868;
   --faint: #999999;
@@ -24,7 +25,14 @@
   --field-focus-border: #171717;
   --field-focus-bg: #ffffff;
   --focus-ring: rgba(0, 0, 0, .11);
+  --step-bg: #ffffff;
+  --step-fg: #111111;
+  --step-active-bg: #e6e6e6;
+  --step-plus-bg: #171717;
+  --step-plus-fg: #ffffff;
+  --step-plus-active-bg: #3a3a3a;
   --total-fg: #ffffff;
+  --total-sub: rgba(255, 255, 255, .72);
   --total-shadow: 0 8px 20px rgba(0, 0, 0, .16);
   --cash-total-bg: #111111;
   --ticket-total-bg: #353535;
@@ -49,6 +57,15 @@
   --badge-bg: #dcdcdc;
   --badge-fg: #111111;
   --empty-bg: #ededed;
+  --scrim: rgba(0, 0, 0, .45);
+  --danger-bg: #9b1c1c;
+  --danger-fg: #ffffff;
+  --banner-bg: #111111;
+  --banner-fg: #ffffff;
+  --banner-sub: rgba(255, 255, 255, .7);
+  --banner-button-bg: #ffffff;
+  --banner-button-fg: #111111;
+  --stepper-width: 176px;
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
   font-variant-numeric: tabular-nums;
 }
@@ -58,6 +75,7 @@
     --bg: #212121;
     --glow: rgba(255, 255, 255, .055);
     --surface: #2f2f2f;
+    --band: #2a2a2a;
     --ink: #f2f2f2;
     --muted: #b4b4b4;
     --faint: #8f8f8f;
@@ -79,6 +97,12 @@
     --field-focus-border: #bdbdbd;
     --field-focus-bg: #404040;
     --focus-ring: rgba(255, 255, 255, .11);
+    --step-bg: #3a3a3a;
+    --step-fg: #f2f2f2;
+    --step-active-bg: #4a4a4a;
+    --step-plus-bg: #f2f2f2;
+    --step-plus-fg: #111111;
+    --step-plus-active-bg: #cfcfcf;
     --total-shadow: 0 8px 20px rgba(0, 0, 0, .3);
     --cash-total-bg: #0f0f0f;
     --ticket-total-bg: #3b3b3b;
@@ -103,6 +127,14 @@
     --badge-bg: #555555;
     --badge-fg: #ffffff;
     --empty-bg: #383838;
+    --scrim: rgba(0, 0, 0, .6);
+    --danger-bg: #ffadad;
+    --danger-fg: #2a0d0d;
+    --banner-bg: #f2f2f2;
+    --banner-fg: #111111;
+    --banner-sub: #555555;
+    --banner-button-bg: #111111;
+    --banner-button-fg: #ffffff;
   }
 }
 
@@ -133,6 +165,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     max(16px, env(safe-area-inset-left, 0px));
 }
 
+body.has-update-banner .app-shell { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+
 .app-header {
   display: flex;
   align-items: flex-start;
@@ -141,7 +175,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   margin: 4px 2px 24px;
 }
 
-.eyebrow, .intro, h1, h2, p { margin: 0; }
+.eyebrow, .intro, h1, h2, h3, p { margin: 0; }
 .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .16em; }
 h1 { margin-top: 5px; font-size: clamp(25px, 7vw, 34px); line-height: 1.25; letter-spacing: -.04em; }
 .intro { max-width: 420px; margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.6; }
@@ -187,11 +221,12 @@ h2 { font-size: 18px; letter-spacing: -.02em; }
 .add-ticket-button { min-height: 40px; padding: 0 12px; border: 0; border-radius: 11px; background: var(--add-bg); color: var(--add-fg); font-size: 12px; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .add-ticket-button:active { transform: scale(.97); }
 
+/* 金種（＋小計）を左、枚数のステッパーを右に置く2列 */
 .table-header, .cash-row {
   display: grid;
-  grid-template-columns: minmax(74px, .8fr) minmax(88px, .75fr) minmax(102px, 1fr);
+  grid-template-columns: minmax(0, 1fr) var(--stepper-width);
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .table-header {
@@ -201,13 +236,14 @@ h2 { font-size: 18px; letter-spacing: -.02em; }
   font-weight: 700;
 }
 
-.table-header span:nth-child(2) { text-align: center; }
-.table-header span:last-child { text-align: right; }
+.table-header span:last-child { text-align: center; }
 
-.cash-row { min-height: 61px; margin: 0 16px; border-top: 1px solid var(--row-line); }
+.cash-row { min-height: 64px; margin: 0 16px; padding: 8px 0; border-top: 1px solid var(--row-line); }
 .cash-row:first-child { border-top: 0; }
+.cash-label { display: grid; gap: 2px; min-width: 0; }
 .denomination { font-size: 15px; font-weight: 750; white-space: nowrap; }
-.multiplication { color: var(--faint); margin-left: 3px; font-size: 12px; }
+.subtotal { color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.subtotal.is-zero { color: var(--faint); font-weight: 600; }
 
 .count-wrap, .field-wrap { position: relative; }
 .count-wrap::after, .field-wrap::after {
@@ -221,7 +257,6 @@ h2 { font-size: 18px; letter-spacing: -.02em; }
 }
 .count-wrap::after { content: "枚"; }
 .field-wrap.yen::after { content: "円"; }
-.field-wrap.count::after { content: "枚"; }
 
 input[type="number"] {
   width: 100%;
@@ -240,23 +275,64 @@ input[type="number"] {
 input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input::placeholder { color: var(--field-placeholder); opacity: 1; }
 input:focus { border-color: var(--field-focus-border); background: var(--field-focus-bg); box-shadow: 0 0 0 3px var(--focus-ring); }
-.subtotal { text-align: right; font-size: 14px; font-weight: 750; white-space: nowrap; }
+
+/* − [枚数] ＋ */
+.stepper { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 6px; width: var(--stepper-width); }
+.stepper .count-wrap::after { right: 8px; }
+.stepper input[type="number"] { padding-right: 22px; padding-left: 4px; }
+.step-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  background: var(--step-bg);
+  color: var(--step-fg);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.step-button:active { background: var(--step-active-bg); transform: scale(.94); }
+.step-button.is-plus { border-color: transparent; background: var(--step-plus-bg); color: var(--step-plus-fg); }
+.step-button.is-plus:active { background: var(--step-plus-active-bg); }
+
+.float-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stepper-width);
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--band);
+}
+.float-label { display: grid; gap: 3px; min-width: 0; }
+.float-label label { font-size: 15px; font-weight: 750; }
+.float-hint { color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 .total-card {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 6px;
   margin: 10px 0 24px;
   padding: 17px 18px;
   border-radius: 16px;
   color: var(--total-fg);
   box-shadow: var(--total-shadow);
 }
+.total-main { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .cash-total-card { background: var(--cash-total-bg); }
 .ticket-total-card { background: var(--ticket-total-bg); border: 1px solid var(--ticket-total-border); }
-.total-card span { font-size: 13px; font-weight: 700; }
-.total-card strong { font-size: clamp(25px, 8vw, 36px); letter-spacing: -.04em; }
+.total-main span { font-size: 13px; font-weight: 700; }
+.total-main strong { font-size: clamp(25px, 8vw, 36px); letter-spacing: -.04em; }
+.total-breakdown { color: var(--total-sub); font-size: 12px; text-align: right; }
+.total-breakdown span { font-weight: 700; }
 
 .ticket-rows { padding: 4px 16px 14px; }
 .ticket-row { padding: 14px 0; border-top: 1px solid var(--row-line); }
@@ -266,9 +342,9 @@ input:focus { border-color: var(--field-focus-border); background: var(--field-f
 .ticket-name-input:focus { border-color: var(--field-focus-border); background: var(--field-focus-bg); box-shadow: 0 0 0 3px var(--focus-ring); }
 .ticket-subtotal { color: var(--accent); font-size: 16px; font-weight: 800; }
 .remove-ticket-button { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: var(--remove-bg); color: var(--remove-fg); font-size: 20px; cursor: pointer; }
-.ticket-fields { display: grid; grid-template-columns: 1fr 18px 1fr; align-items: end; gap: 6px; }
-.ticket-fields label { display: block; color: var(--muted); font-size: 10px; font-weight: 700; }
-.ticket-fields input { margin-top: 5px; }
+.ticket-fields { display: grid; grid-template-columns: minmax(0, 1fr) 14px var(--stepper-width); align-items: end; gap: 6px; }
+.ticket-field { display: grid; gap: 5px; min-width: 0; }
+.field-label { color: var(--muted); font-size: 10px; font-weight: 700; }
 .ticket-fields .times { padding-bottom: 13px; color: var(--faint); text-align: center; }
 
 .result-card {
@@ -288,19 +364,71 @@ input:focus { border-color: var(--field-focus-border); background: var(--field-f
 .result-message-row strong { font-size: clamp(19px, 5.5vw, 26px); line-height: 1.35; letter-spacing: -.03em; }
 .result-card p { margin-top: 12px; padding-top: 12px; border-top: 1px solid currentColor; border-color: color-mix(in srgb, currentColor 20%, transparent); font-size: 13px; }
 .result-card p span { font-weight: 800; }
-.suggestions-card { margin-top: 12px; padding: 20px; border: 1px solid var(--sugg-border); border-radius: 20px; background: var(--sugg-bg); box-shadow: var(--shadow); }
-.suggestions-card[hidden] { display: none; }
+
+.suggestions-card { margin-top: 12px; padding: 20px; border: 1px solid var(--sugg-border); border-radius: 20px; background: var(--sugg-bg); box-shadow: var(--shadow); counter-reset: suggestion; }
+.suggestions-card[hidden], .suggestion-group[hidden], .suggestions-empty[hidden] { display: none; }
 .suggestions-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .suggestions-heading > div { display: flex; align-items: center; gap: 9px; }
 .suggestions-count { color: var(--muted); font-size: 11px; }
 .suggestions-lead { margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.suggestions-list { display: grid; gap: 9px; margin: 15px 0 0; padding: 0; list-style: none; counter-reset: suggestion; }
+.suggestion-group { margin-top: 16px; }
+.suggestion-group-title { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .06em; }
+.suggestions-list { display: grid; gap: 9px; margin: 8px 0 0; padding: 0; list-style: none; }
 .suggestions-list li { position: relative; padding: 13px 13px 13px 43px; border: 1px solid var(--item-border); border-radius: 13px; background: var(--item-bg); color: var(--item-fg); font-size: 13px; font-weight: 700; line-height: 1.6; counter-increment: suggestion; }
 .suggestions-list li::before { content: counter(suggestion); position: absolute; top: 12px; left: 12px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--badge-bg); color: var(--badge-fg); font-size: 11px; font-weight: 900; }
 .suggestion-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 500; }
 .suggestions-empty { margin-top: 14px; padding: 13px; border-radius: 12px; background: var(--empty-bg); color: var(--muted); font-size: 12px; line-height: 1.6; }
-.save-note { margin: 16px 0 0; color: var(--muted); text-align: center; font-size: 11px; }
-.save-note span { color: var(--accent); font-size: 7px; vertical-align: 2px; }
+
+.privacy-note { margin: 28px 2px 0; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); }
+.privacy-note h2 { color: var(--ink); font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+.privacy-note ul { display: grid; gap: 6px; margin: 10px 0 0; padding-left: 1.2em; font-size: 11px; line-height: 1.7; }
+
+/* リセットの選択シート */
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: end center;
+  padding:
+    max(16px, env(safe-area-inset-top, 0px))
+    max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
+  background: var(--scrim);
+}
+.sheet-scrim[hidden] { display: none; }
+.sheet { width: min(100%, 420px); padding: 22px 18px 16px; border: 1px solid var(--card-border); border-radius: 22px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.sheet h2 { font-size: 18px; }
+.sheet > p { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.sheet-actions { display: grid; gap: 9px; margin-top: 16px; }
+.sheet-button { display: grid; gap: 2px; min-height: 52px; padding: 10px 14px; border: 1px solid transparent; border-radius: 14px; font-size: 15px; font-weight: 800; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sheet-button span { font-size: 11px; font-weight: 500; opacity: .8; }
+.sheet-button:active { transform: scale(.98); }
+.sheet-primary { background: var(--step-plus-bg); color: var(--step-plus-fg); }
+.sheet-danger { background: var(--danger-bg); color: var(--danger-fg); }
+.sheet-cancel { min-height: 46px; border-color: var(--reset-border); background: var(--surface); color: var(--ink); }
+
+/* 新しいバージョンのお知らせ */
+.update-banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding:
+    0
+    max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
+  pointer-events: none;
+}
+.update-banner[hidden] { display: none; }
+.update-banner-inner { display: flex; align-items: center; gap: 12px; width: min(100%, 640px); margin: 0 auto; padding: 12px 12px 12px 16px; border-radius: 16px; background: var(--banner-bg); color: var(--banner-fg); box-shadow: var(--shadow); pointer-events: auto; }
+.update-banner p { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; font-size: 14px; }
+.update-banner p span { color: var(--banner-sub); font-size: 11px; }
+.update-button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: 0; border-radius: 11px; background: var(--banner-button-bg); color: var(--banner-button-fg); font-size: 13px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.update-button:disabled { opacity: .6; cursor: default; }
 
 @media (min-width: 560px) {
   .app-shell {
@@ -308,10 +436,11 @@ input:focus { border-color: var(--field-focus-border); background: var(--field-f
     padding-right: max(24px, env(safe-area-inset-right, 0px));
   }
   .card { border-radius: 24px; }
-  .cash-row, .table-header { grid-template-columns: 1fr 150px 1.25fr; }
+  .sheet-scrim { place-items: center; }
 }
 
 @media (max-width: 365px) {
+  :root { --stepper-width: 164px; }
   .app-shell {
     padding-left: max(10px, env(safe-area-inset-left, 0px));
     padding-right: max(10px, env(safe-area-inset-right, 0px));
@@ -319,9 +448,12 @@ input:focus { border-color: var(--field-focus-border); background: var(--field-f
   .intro { display: none; }
   .card { border-radius: 16px; }
   .section-heading, .table-header { padding-left: 12px; padding-right: 12px; }
-  .cash-row { margin-left: 12px; margin-right: 12px; grid-template-columns: 71px 82px minmax(92px, 1fr); gap: 5px; }
-  .denomination, .subtotal { font-size: 13px; }
-  input[type="number"] { padding-left: 5px; }
+  .cash-row { margin-left: 12px; margin-right: 12px; gap: 6px; }
+  .float-row { padding-left: 12px; padding-right: 12px; gap: 6px; }
+  .ticket-rows { padding-left: 12px; padding-right: 12px; }
+  .stepper { grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 4px; }
+  .step-button { width: 42px; }
+  .denomination { font-size: 14px; }
   .ticket-title { grid-template-columns: minmax(0, 1fr) auto; }
   .ticket-title .ticket-subtotal { grid-row: 2; grid-column: 1; text-align: left; }
   .remove-ticket-button { grid-row: 1; grid-column: 2; }

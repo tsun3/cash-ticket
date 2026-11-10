@@ -1,7 +1,9 @@
 "use strict";
 
-// ファイルを更新したら、この番号を上げると古いキャッシュが入れ替わる
-const CACHE_NAME = "cash-ticket-v1";
+// アプリのファイルを変更したら、必ずこの番号を上げる（上げないと利用者の端末に反映されない）
+const CACHE_VERSION = "v2";
+const CACHE_PREFIX = "cash-ticket-";
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const APP_FILES = [
   "./",
   "./index.html",
@@ -14,47 +16,42 @@ const APP_FILES = [
   "./icons/favicon-32.png",
 ];
 
+// 新しいバージョンはここでまとめて取得しておき、利用者が「更新する」を押すまで待機する
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_FILES))
-      .then(() => self.skipWaiting()),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_FILES.map((url) => new Request(url, { cache: "reload" })))),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   );
 });
 
-// キャッシュがあれば即座に返し（圏外でも開ける）、裏で最新版を取り直して次回に反映する
+// 同じバージョンのファイルをキャッシュから返す（圏外でも開け、古い版と新しい版が混ざらない）
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
 
-  const network = fetch(request)
-    .then(async (response) => {
-      if (response.ok) {
-        const cache = await caches.open(CACHE_NAME);
-        await cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => null);
-  event.waitUntil(network);
-
   event.respondWith((async () => {
-    const cached = await caches.match(request, { ignoreSearch: true });
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request, { ignoreSearch: true });
     if (cached) return cached;
-    const response = await network;
-    if (response) return response;
-    if (request.mode === "navigate") {
-      const shell = await caches.match("./index.html");
-      if (shell) return shell;
+    try {
+      return await fetch(request);
+    } catch (error) {
+      if (request.mode === "navigate") {
+        const shell = await cache.match("./index.html");
+        if (shell) return shell;
+      }
+      throw error;
     }
-    return Response.error();
   })());
 });

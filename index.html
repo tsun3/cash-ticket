@@ -24,7 +24,7 @@
           <h1>現金・当日券 集計</h1>
           <p class="intro">手元の現金と当日券の売上を、すばやく照合します。</p>
         </div>
-        <button id="reset-button" class="reset-button" type="button">リセット</button>
+        <button id="reset-button" class="reset-button" type="button" aria-haspopup="dialog">リセット</button>
       </header>
 
       <section class="card" aria-labelledby="cash-heading">
@@ -36,16 +36,25 @@
           <span class="section-note">枚数を入力</span>
         </div>
         <div class="table-header" aria-hidden="true">
-          <span>金種</span>
+          <span>金種・小計</span>
           <span>枚数</span>
-          <span>小計</span>
         </div>
         <div id="cash-rows"></div>
+        <div class="float-row">
+          <div class="float-label">
+            <label for="float-amount">釣り銭準備金</label>
+            <span id="float-hint" class="float-hint">開始時に用意した釣り銭。現金合計から差し引いて照合します。</span>
+          </div>
+          <div class="field-wrap yen float-field"><input id="float-amount" data-float type="number" inputmode="numeric" min="0" step="1" placeholder="0" aria-describedby="float-hint"></div>
+        </div>
       </section>
 
       <div class="total-card cash-total-card">
-        <span>現金合計</span>
-        <strong id="cash-total">0円</strong>
+        <div class="total-main">
+          <span id="cash-total-label">現金合計</span>
+          <strong id="cash-total">0円</strong>
+        </div>
+        <p id="cash-breakdown" class="total-breakdown" hidden>手元の現金 <span id="cash-gross">0円</span> − 釣り銭準備金 <span id="float-total">0円</span></p>
       </div>
 
       <section class="card" aria-labelledby="ticket-heading">
@@ -60,8 +69,10 @@
       </section>
 
       <div class="total-card ticket-total-card">
-        <span>当日券売上合計</span>
-        <strong id="ticket-total">0円</strong>
+        <div class="total-main">
+          <span>当日券売上合計</span>
+          <strong id="ticket-total">0円</strong>
+        </div>
       </div>
 
       <section id="result-card" class="result-card is-match" aria-live="polite">
@@ -79,12 +90,52 @@
           <span id="suggestions-count" class="suggestions-count"></span>
         </div>
         <p id="suggestions-lead" class="suggestions-lead"></p>
-        <ol id="suggestions-list" class="suggestions-list"></ol>
+        <div id="ticket-suggestions" class="suggestion-group" hidden>
+          <h3 class="suggestion-group-title">当日券の入力</h3>
+          <ol id="suggestions-list" class="suggestions-list"></ol>
+        </div>
+        <div id="cash-suggestions" class="suggestion-group" hidden>
+          <h3 class="suggestion-group-title">現金の数え間違い</h3>
+          <ol id="cash-suggestions-list" class="suggestions-list"></ol>
+        </div>
         <p id="suggestions-empty" class="suggestions-empty" hidden></p>
       </section>
 
-      <p class="save-note"><span aria-hidden="true">●</span> 入力内容はこの端末に自動保存されます</p>
+      <footer class="privacy-note" aria-labelledby="privacy-heading">
+        <h2 id="privacy-heading">データの取り扱い</h2>
+        <ul>
+          <li>入力した金額や枚数は自動で保存され、この端末のブラウザの中にだけ残ります。</li>
+          <li>通信するのはアプリ本体を読み込むときだけです。入力内容が外部のサーバーへ送信されることはありません。</li>
+          <li>開発者を含め、第三者が集計データを見たり利用したりすることはありません。アクセス解析や広告のプログラムも使っていません。</li>
+          <li>「すべてリセット」するか、ブラウザのデータを消去すると、端末からも削除されます。</li>
+        </ul>
+      </footer>
     </main>
+
+    <div id="reset-sheet" class="sheet-scrim" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="reset-sheet-title" aria-describedby="reset-sheet-desc">
+        <h2 id="reset-sheet-title">リセット</h2>
+        <p id="reset-sheet-desc">消す範囲を選んでください。元には戻せません。</p>
+        <div class="sheet-actions">
+          <button id="reset-counts-button" class="sheet-button sheet-primary" type="button">
+            枚数だけリセット
+            <span>券種・単価・釣り銭準備金は残します</span>
+          </button>
+          <button id="reset-all-button" class="sheet-button sheet-danger" type="button">
+            すべてリセット
+            <span>券種や準備金も含めて、入力をすべて消します</span>
+          </button>
+          <button id="reset-cancel-button" class="sheet-button sheet-cancel" type="button">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="update-banner" class="update-banner" role="status" hidden>
+      <div class="update-banner-inner">
+        <p><strong>新しいバージョンがあります</strong><span>入力内容はそのまま残ります</span></p>
+        <button id="update-button" class="update-button" type="button">更新する</button>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>
