@@ -2,7 +2,9 @@
 
 const CASH_DENOMINATIONS = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
 const STORAGE_KEY = "event-cash-ticket-counter-v1";
-const PRESET_MEMORY_KEY = "event-cash-ticket-preset-v1";
+const HANDLED_PRESETS_KEY = "event-cash-ticket-preset-handled-v1";
+const LEGACY_PRESET_MEMORY_KEY = "event-cash-ticket-preset-v1";
+const MAX_HANDLED_PRESETS = 20;
 const PRESET_FORMAT = "1";
 const MAX_PRESET_TICKETS = 30;
 const MAX_TICKET_NAME_LENGTH = 40;
@@ -481,10 +483,9 @@ function resetAll() {
   floatInput.value = "";
   tickets = [newTicket()];
   renderTickets();
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PRESET_MEMORY_KEY);
-  } catch (_) { /* 何もしない */ }
+  // 読み込み済みの共有設定の記録（中身の分からない短い識別子だけ）は残す。
+  // 消すと、共有URL付きで起動するホーム画面のアプリで、リセット後に共有設定が戻ってきてしまう
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) { /* 何もしない */ }
   calculate({ shouldSave: false });
 }
 
@@ -552,12 +553,45 @@ function hasAnyInput() {
     || tickets.some((ticket) => ticket.name.trim() || ticket.price > 0 || ticket.count > 0);
 }
 
-function rememberPreset(key) {
-  try { localStorage.setItem(PRESET_MEMORY_KEY, key); } catch (_) { /* 何もしない */ }
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+const isLineInAppBrowser = () => /\bLine\//i.test(window.navigator.userAgent);
+// 共有URLが開き直しのたびに付いてくる場面（ホーム画面のアプリ、URLを残す LINE の中のブラウザ）
+const presetUrlMayPersist = () => isStandalone() || isLineInAppBrowser();
+
+// 読み込み済みの共有設定は、中身の分からない短い識別子（FNV-1a）だけを記録する
+function presetFingerprint(key) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
 }
 
-function rememberedPreset() {
-  try { return localStorage.getItem(PRESET_MEMORY_KEY); } catch (_) { return null; }
+function handledPresets() {
+  try {
+    const list = JSON.parse(localStorage.getItem(HANDLED_PRESETS_KEY));
+    return Array.isArray(list) ? list.filter((item) => typeof item === "string") : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function markPresetHandled(key) {
+  const fingerprint = presetFingerprint(key);
+  const list = handledPresets().filter((item) => item !== fingerprint);
+  list.push(fingerprint);
+  try { localStorage.setItem(HANDLED_PRESETS_KEY, JSON.stringify(list.slice(-MAX_HANDLED_PRESETS))); } catch (_) { /* 何もしない */ }
+}
+
+const wasPresetHandled = (key) => handledPresets().includes(presetFingerprint(key));
+
+// 読み込んだら、アドレスバーを元のアプリのURLに戻す。
+// こうしておくと「ホーム画面に追加」で共有設定に縛られないアイコンになり、再読み込みでも読み込み直さない。
+// LINE の中のブラウザでは「Safariで開く」で設定を引き継げるように残す
+function clearPresetFromAddressBar() {
+  if (isLineInAppBrowser()) return;
+  try { window.history.replaceState(window.history.state, "", window.location.pathname); } catch (_) { /* 何もしない */ }
 }
 
 function renderPresetPreview(list, settings) {
@@ -590,7 +624,7 @@ function openPresetConfirm(settings) {
   openSheet(presetSheet, {
     focus: presetApplyButton,
     onDismiss: () => {
-      rememberPreset(encodePreset(settings));
+      markPresetHandled(encodePreset(settings));
       pendingPreset = null;
     },
   });
@@ -599,25 +633,27 @@ function openPresetConfirm(settings) {
 // fromLink: URL を開いたとき true、貼り付けて読み込んだとき false
 function offerPreset(settings, { fromLink }) {
   const key = encodePreset(settings);
+  // 起動のたびに同じ共有URLが付いてくる場面では、一度扱った設定で読み込みも確認も繰り返さない
+  // （リセット後に共有設定が戻ってくる、といったことが起きないようにする）
+  if (fromLink && presetUrlMayPersist() && wasPresetHandled(key)) return;
   if (key === encodePreset(currentSettings())) {
-    rememberPreset(key);
+    markPresetHandled(key);
     if (!fromLink) showToast("すでにこの設定になっています");
     return;
   }
   if (!hasAnyInput()) {
     applyPreset(settings);
-    rememberPreset(key);
+    markPresetHandled(key);
     showToast(appliedMessage(settings));
     return;
   }
-  // 同じリンクで一度「読み込む／今のまま」を選んでいれば、開き直しても聞き直さない
-  if (fromLink && rememberedPreset() === key) return;
   openPresetConfirm(settings);
 }
 
 function handlePresetFromLocation() {
   const raw = window.location.hash.slice(1);
   if (!raw) return;
+  clearPresetFromAddressBar();
   const settings = decodePreset(raw);
   if (settings) {
     offerPreset(settings, { fromLink: true });
@@ -632,7 +668,7 @@ presetApplyButton.addEventListener("click", () => {
   pendingPreset = null;
   closeSheet({ dismissed: false, restoreFocus: false });
   applyPreset(settings);
-  rememberPreset(encodePreset(settings));
+  markPresetHandled(encodePreset(settings));
   showToast(appliedMessage(settings));
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
@@ -716,6 +752,9 @@ importForm.addEventListener("submit", (event) => {
 });
 
 importCancelButton.addEventListener("click", () => closeSheet());
+
+// 以前の版が共有設定の中身をそのまま記録していたキーを消す
+try { localStorage.removeItem(LEGACY_PRESET_MEMORY_KEY); } catch (_) { /* 何もしない */ }
 
 window.addEventListener("hashchange", handlePresetFromLocation);
 handlePresetFromLocation();

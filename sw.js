@@ -1,7 +1,7 @@
 "use strict";
 
 // アプリのファイルを変更したら、必ずこの番号を上げる（上げないと利用者の端末に反映されない）
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const CACHE_PREFIX = "cash-ticket-";
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const APP_FILES = [

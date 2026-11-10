@@ -3,6 +3,7 @@
   "short_name": "当日券集計",
   "description": "手元の現金と当日券の売上を、すばやく照合します。",
   "lang": "ja",
+  "start_url": "./",
   "id": "./",
   "scope": "./",
   "display": "standalone",
