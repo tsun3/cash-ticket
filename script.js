@@ -39,6 +39,11 @@ const cashSuggestionsList = document.getElementById("cash-suggestions-list");
 const suggestionsEmpty = document.getElementById("suggestions-empty");
 const suggestionsCount = document.getElementById("suggestions-count");
 const addTicketButton = document.getElementById("add-ticket-button");
+const removeTicketSheet = document.getElementById("remove-ticket-sheet");
+const removeTicketTitle = document.getElementById("remove-ticket-title");
+const removeTicketPreview = document.getElementById("remove-ticket-preview");
+const removeTicketConfirmButton = document.getElementById("remove-ticket-confirm-button");
+const removeTicketCancelButton = document.getElementById("remove-ticket-cancel-button");
 const resetButton = document.getElementById("reset-button");
 const resetSheet = document.getElementById("reset-sheet");
 const resetCountsButton = document.getElementById("reset-counts-button");
@@ -392,14 +397,54 @@ addTicketButton.addEventListener("click", () => {
   document.querySelector(`[data-ticket-id="${ticket.id}"][data-kind="name"]`).focus();
 });
 
-ticketRows.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-remove-ticket]");
-  if (!button) return;
-  tickets = tickets.filter((ticket) => ticket.id !== button.dataset.removeTicket);
+/* ---- 券種の削除（入力がある行は確認してから） ---- */
+
+let pendingRemoveTicketId = null;
+const ticketHasInput = (ticket) => Boolean(ticket.name.trim()) || ticket.price > 0 || ticket.count > 0;
+const ticketLabel = (ticket) => ticket.name.trim() || `券種${tickets.indexOf(ticket) + 1}`;
+
+function removeTicket(id) {
+  tickets = tickets.filter((ticket) => ticket.id !== id);
   if (tickets.length === 0) tickets.push(newTicket());
   renderTickets();
   calculate();
+}
+
+ticketRows.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-remove-ticket]");
+  if (!button) return;
+  const ticket = tickets.find((item) => item.id === button.dataset.removeTicket);
+  if (!ticket) return;
+  // 何も入力していない行は、確認せずにそのまま消す
+  if (!ticketHasInput(ticket)) {
+    removeTicket(ticket.id);
+    return;
+  }
+  pendingRemoveTicketId = ticket.id;
+  removeTicketTitle.textContent = `「${ticketLabel(ticket)}」を削除しますか？`;
+  removeTicketPreview.innerHTML = [
+    ["単価", formatYen(ticket.price), ""],
+    ["販売枚数", `${ticket.count.toLocaleString("ja-JP")}枚`, ""],
+    ["小計", formatYen(ticket.price * ticket.count), "is-total"],
+  ].map(([label, value, className]) => `<li class="${className}"><span>${label}</span><span>${value}</span></li>`).join("");
+  openSheet(removeTicketSheet, {
+    focus: removeTicketCancelButton,
+    onDismiss: () => { pendingRemoveTicketId = null; },
+  });
 });
+
+removeTicketConfirmButton.addEventListener("click", () => {
+  const ticket = tickets.find((item) => item.id === pendingRemoveTicketId);
+  pendingRemoveTicketId = null;
+  closeSheet({ dismissed: false, restoreFocus: false });
+  if (!ticket) return;
+  const label = ticketLabel(ticket);
+  removeTicket(ticket.id);
+  showToast(`「${label}」を削除しました`);
+  addTicketButton.focus({ preventScroll: true });
+});
+
+removeTicketCancelButton.addEventListener("click", () => closeSheet());
 
 /* ---- シート（リセット・共有・読み込み）の開閉 ---- */
 

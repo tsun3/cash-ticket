@@ -423,7 +423,7 @@ input:focus { border-color: var(--field-focus-border); background: var(--field-f
 .preset-preview li:first-child { border-top: 0; }
 .preset-preview li span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .preset-preview li span:last-child { flex: 0 0 auto; }
-.preset-preview li.is-float { background: var(--band); }
+.preset-preview li.is-float, .preset-preview li.is-total { background: var(--band); }
 
 .sheet-field-label { display: block; margin-top: 14px; color: var(--muted); font-size: 11px; font-weight: 700; }
 .share-url { margin-top: 6px; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: 10px; background: var(--field-bg); color: var(--field-fg); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
