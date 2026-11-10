@@ -2,12 +2,18 @@
 
 const CASH_DENOMINATIONS = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
 const STORAGE_KEY = "event-cash-ticket-counter-v1";
+const PRESET_MEMORY_KEY = "event-cash-ticket-preset-v1";
+const PRESET_FORMAT = "1";
+const MAX_PRESET_TICKETS = 30;
+const MAX_TICKET_NAME_LENGTH = 40;
+const MAX_AMOUNT = 100000000;
 const MAX_SUGGESTIONS = 8;
 const MAX_CASH_SUGGESTIONS = 3;
 const MAX_CASH_MISCOUNT = 10;
 const SEARCH_NODE_LIMIT = 250000;
 const HOLD_DELAY_MS = 450;
 const HOLD_INTERVAL_MS = 90;
+const TOAST_MS = 3200;
 
 const cashRows = document.getElementById("cash-rows");
 const ticketRows = document.getElementById("ticket-rows");
@@ -36,6 +42,25 @@ const resetSheet = document.getElementById("reset-sheet");
 const resetCountsButton = document.getElementById("reset-counts-button");
 const resetAllButton = document.getElementById("reset-all-button");
 const resetCancelButton = document.getElementById("reset-cancel-button");
+const shareOpenButton = document.getElementById("share-open-button");
+const importOpenButton = document.getElementById("import-open-button");
+const shareSheet = document.getElementById("share-sheet");
+const sharePreview = document.getElementById("share-preview");
+const shareUrlElement = document.getElementById("share-url");
+const shareStatus = document.getElementById("share-status");
+const shareNativeButton = document.getElementById("share-native-button");
+const shareCopyButton = document.getElementById("share-copy-button");
+const shareCloseButton = document.getElementById("share-close-button");
+const importSheet = document.getElementById("import-sheet");
+const importForm = document.getElementById("import-form");
+const importField = document.getElementById("import-url");
+const importError = document.getElementById("import-error");
+const importCancelButton = document.getElementById("import-cancel-button");
+const presetSheet = document.getElementById("preset-sheet");
+const presetPreview = document.getElementById("preset-preview");
+const presetApplyButton = document.getElementById("preset-apply-button");
+const presetKeepButton = document.getElementById("preset-keep-button");
+const toast = document.getElementById("toast");
 const updateBanner = document.getElementById("update-banner");
 const updateButton = document.getElementById("update-button");
 
@@ -374,17 +399,71 @@ ticketRows.addEventListener("click", (event) => {
   calculate();
 });
 
+/* ---- シート（リセット・共有・読み込み）の開閉 ---- */
+
+let activeSheet = null;
+let activeSheetOptions = {};
+let sheetReturnFocus = null;
+
+function openSheet(sheet, options = {}) {
+  if (activeSheet) closeSheet({ restoreFocus: false });
+  const focused = document.activeElement;
+  sheetReturnFocus = focused instanceof HTMLElement && focused !== document.body ? focused : null;
+  activeSheet = sheet;
+  activeSheetOptions = options;
+  sheet.hidden = false;
+  const target = options.focus || sheet.querySelector("button:not([hidden])");
+  if (target) target.focus({ preventScroll: true });
+}
+
+// dismissed: キャンセル・背景タップ・Esc で閉じたとき true
+function closeSheet({ dismissed = true, restoreFocus = true } = {}) {
+  if (!activeSheet) return;
+  const { onDismiss } = activeSheetOptions;
+  activeSheet.hidden = true;
+  activeSheet = null;
+  activeSheetOptions = {};
+  if (dismissed && onDismiss) onDismiss();
+  if (restoreFocus && sheetReturnFocus && document.contains(sheetReturnFocus)) sheetReturnFocus.focus({ preventScroll: true });
+  sheetReturnFocus = null;
+}
+
+document.querySelectorAll(".sheet-scrim").forEach((scrim) => {
+  scrim.addEventListener("click", (event) => {
+    if (event.target === scrim) closeSheet();
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!activeSheet) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeSheet();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...activeSheet.querySelectorAll("button, textarea, input")].filter((element) => !element.hidden && !element.disabled);
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+
+let toastTimer = 0;
+function showToast(message) {
+  toast.textContent = message;
+  toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => { toast.hidden = true; }, TOAST_MS);
+}
+
 /* ---- リセット（枚数だけ／すべて） ---- */
-
-function openResetSheet() {
-  resetSheet.hidden = false;
-  resetCountsButton.focus();
-}
-
-function closeResetSheet() {
-  resetSheet.hidden = true;
-  resetButton.focus();
-}
 
 function clearCashCounts() {
   document.querySelectorAll("[data-cash]").forEach((input) => { input.value = ""; });
@@ -402,41 +481,244 @@ function resetAll() {
   floatInput.value = "";
   tickets = [newTicket()];
   renderTickets();
-  try { localStorage.removeItem(STORAGE_KEY); } catch (_) { /* 何もしない */ }
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PRESET_MEMORY_KEY);
+  } catch (_) { /* 何もしない */ }
   calculate({ shouldSave: false });
 }
 
 function finishReset(reset) {
+  closeSheet({ dismissed: false, restoreFocus: false });
   reset();
-  resetSheet.hidden = true;
   window.scrollTo({ top: 0, behavior: "smooth" });
   resetButton.focus({ preventScroll: true });
 }
 
-resetButton.addEventListener("click", openResetSheet);
+resetButton.addEventListener("click", () => openSheet(resetSheet, { focus: resetCountsButton }));
 resetCountsButton.addEventListener("click", () => finishReset(resetCounts));
 resetAllButton.addEventListener("click", () => finishReset(resetAll));
-resetCancelButton.addEventListener("click", closeResetSheet);
-resetSheet.addEventListener("click", (event) => {
-  if (event.target === resetSheet) closeResetSheet();
-});
-resetSheet.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    closeResetSheet();
+resetCancelButton.addEventListener("click", () => closeSheet());
+
+/* ---- 設定の共有URL ----
+   券種・単価・釣り銭準備金だけを URL の # 以降に入れる（# 以降はサーバーに送られない）。
+   形式: #v=1&f=<準備金>&t=<単価>-<券名>&t=... */
+
+function normalizeSettings({ tickets: list, float }) {
+  return {
+    tickets: list
+      .map(({ name, price }) => ({ name: String(name).trim().slice(0, MAX_TICKET_NAME_LENGTH), price: Math.min(safeNumber(price), MAX_AMOUNT) }))
+      .filter(({ name, price }) => name || price > 0)
+      .slice(0, MAX_PRESET_TICKETS),
+    float: Math.min(safeNumber(float), MAX_AMOUNT),
+  };
+}
+
+const currentSettings = () => normalizeSettings({ tickets, float: getFloatAmount() });
+const hasSettings = (settings) => settings.tickets.length > 0 || settings.float > 0;
+
+function encodePreset(settings) {
+  const params = new URLSearchParams();
+  params.set("v", PRESET_FORMAT);
+  if (settings.float > 0) params.set("f", String(settings.float));
+  settings.tickets.forEach(({ name, price }) => params.append("t", `${price}-${name}`));
+  return params.toString();
+}
+
+function decodePreset(raw) {
+  const params = new URLSearchParams(raw);
+  if (params.get("v") !== PRESET_FORMAT) return null;
+  const entries = params.getAll("t").map((entry) => {
+    const match = /^(\d{1,9})-([\s\S]*)$/.exec(entry);
+    return match ? { name: match[2], price: Number(match[1]) } : null;
+  });
+  if (entries.some((entry) => entry === null)) return null;
+  const settings = normalizeSettings({ tickets: entries, float: params.get("f") || 0 });
+  return hasSettings(settings) ? settings : null;
+}
+
+function buildPresetUrl(settings) {
+  const url = new URL(window.location.pathname, window.location.origin);
+  // LINE で開いたときにアプリ内ブラウザではなく Safari などで開くための指定
+  url.searchParams.set("openExternalBrowser", "1");
+  url.hash = encodePreset(settings);
+  return url.href;
+}
+
+function hasAnyInput() {
+  const cash = getCashState();
+  return getFloatAmount() > 0
+    || CASH_DENOMINATIONS.some((denomination) => cash[denomination] > 0)
+    || tickets.some((ticket) => ticket.name.trim() || ticket.price > 0 || ticket.count > 0);
+}
+
+function rememberPreset(key) {
+  try { localStorage.setItem(PRESET_MEMORY_KEY, key); } catch (_) { /* 何もしない */ }
+}
+
+function rememberedPreset() {
+  try { return localStorage.getItem(PRESET_MEMORY_KEY); } catch (_) { return null; }
+}
+
+function renderPresetPreview(list, settings) {
+  const rows = settings.tickets.length
+    ? settings.tickets.map(({ name, price }) => `<li><span>${escapeHtml(name || "名称未入力の券")}</span><span>${formatYen(price)}</span></li>`)
+    : ["<li><span>券種</span><span>なし</span></li>"];
+  rows.push(`<li class="is-float"><span>釣り銭準備金</span><span>${settings.float > 0 ? formatYen(settings.float) : "なし"}</span></li>`);
+  list.innerHTML = rows.join("");
+}
+
+function appliedMessage(settings) {
+  const parts = [`券種${settings.tickets.length}件`];
+  if (settings.float > 0) parts.push(`準備金${formatYen(settings.float)}`);
+  return `共有された設定を読み込みました（${parts.join("・")}）`;
+}
+
+function applyPreset(settings) {
+  clearCashCounts();
+  floatInput.value = settings.float > 0 ? String(settings.float) : "";
+  tickets = settings.tickets.length ? settings.tickets.map(({ name, price }) => newTicket(name, price, 0)) : [newTicket()];
+  renderTickets();
+  calculate();
+}
+
+let pendingPreset = null;
+
+function openPresetConfirm(settings) {
+  pendingPreset = settings;
+  renderPresetPreview(presetPreview, settings);
+  openSheet(presetSheet, {
+    focus: presetApplyButton,
+    onDismiss: () => {
+      rememberPreset(encodePreset(settings));
+      pendingPreset = null;
+    },
+  });
+}
+
+// fromLink: URL を開いたとき true、貼り付けて読み込んだとき false
+function offerPreset(settings, { fromLink }) {
+  const key = encodePreset(settings);
+  if (key === encodePreset(currentSettings())) {
+    rememberPreset(key);
+    if (!fromLink) showToast("すでにこの設定になっています");
     return;
   }
-  if (event.key !== "Tab") return;
-  const buttons = [...resetSheet.querySelectorAll("button")];
-  const first = buttons[0];
-  const last = buttons[buttons.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
+  if (!hasAnyInput()) {
+    applyPreset(settings);
+    rememberPreset(key);
+    showToast(appliedMessage(settings));
+    return;
+  }
+  // 同じリンクで一度「読み込む／今のまま」を選んでいれば、開き直しても聞き直さない
+  if (fromLink && rememberedPreset() === key) return;
+  openPresetConfirm(settings);
+}
+
+function handlePresetFromLocation() {
+  const raw = window.location.hash.slice(1);
+  if (!raw) return;
+  const settings = decodePreset(raw);
+  if (settings) {
+    offerPreset(settings, { fromLink: true });
+  } else if (/(^|&)(v|t|f)=/.test(raw)) {
+    showToast("共有リンクの設定を読み取れませんでした");
+  }
+}
+
+presetApplyButton.addEventListener("click", () => {
+  const settings = pendingPreset;
+  if (!settings) return;
+  pendingPreset = null;
+  closeSheet({ dismissed: false, restoreFocus: false });
+  applyPreset(settings);
+  rememberPreset(encodePreset(settings));
+  showToast(appliedMessage(settings));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+presetKeepButton.addEventListener("click", () => closeSheet());
+
+shareOpenButton.addEventListener("click", () => {
+  const settings = currentSettings();
+  if (!hasSettings(settings)) {
+    showToast("共有できる設定がありません。券種・単価か釣り銭準備金を入力してください。");
+    return;
+  }
+  renderPresetPreview(sharePreview, settings);
+  shareUrlElement.textContent = buildPresetUrl(settings);
+  shareStatus.textContent = "";
+  shareNativeButton.hidden = typeof navigator.share !== "function";
+  openSheet(shareSheet, { focus: shareNativeButton.hidden ? shareCopyButton : shareNativeButton });
+});
+
+shareNativeButton.addEventListener("click", async () => {
+  try {
+    await navigator.share({
+      title: "現金・当日券 集計の設定",
+      text: "券種・単価・釣り銭準備金の設定です。開くと読み込まれます。",
+      url: shareUrlElement.textContent,
+    });
+  } catch (error) {
+    if (error && error.name === "AbortError") return;
+    shareStatus.textContent = "共有できませんでした。「URLをコピー」から送ってください。";
   }
 });
+
+shareCopyButton.addEventListener("click", async () => {
+  const url = shareUrlElement.textContent;
+  const done = "URLをコピーしました。LINEなどに貼り付けて送ってください。";
+  try {
+    await navigator.clipboard.writeText(url);
+    shareStatus.textContent = done;
+  } catch (_) {
+    const range = document.createRange();
+    range.selectNodeContents(shareUrlElement);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch (_) { copied = false; }
+    shareStatus.textContent = copied ? done : "コピーできませんでした。URLを長押ししてコピーしてください。";
+  }
+});
+
+shareCloseButton.addEventListener("click", () => closeSheet());
+
+function extractPresetRaw(text) {
+  const value = text.trim();
+  const hashIndex = value.indexOf("#");
+  if (hashIndex >= 0) return value.slice(hashIndex + 1);
+  return /^v=/.test(value) ? value : "";
+}
+
+importField.placeholder = `${window.location.origin}${window.location.pathname}#v=1&…`;
+
+importOpenButton.addEventListener("click", () => {
+  importField.value = "";
+  importError.hidden = true;
+  openSheet(importSheet, { focus: importField });
+});
+
+importForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const raw = extractPresetRaw(importField.value);
+  const settings = raw ? decodePreset(raw) : null;
+  if (!settings) {
+    importError.textContent = importField.value.trim()
+      ? "共有URLとして読み取れませんでした。受け取ったURLを最後までコピーして貼り付けてください。"
+      : "共有URLを貼り付けてください。";
+    importError.hidden = false;
+    importField.focus();
+    return;
+  }
+  closeSheet({ dismissed: false });
+  offerPreset(settings, { fromLink: false });
+});
+
+importCancelButton.addEventListener("click", () => closeSheet());
+
+window.addEventListener("hashchange", handlePresetFromLocation);
+handlePresetFromLocation();
 
 /* ---- オフライン対応と更新のお知らせ ---- */
 

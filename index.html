@@ -101,11 +101,23 @@
         <p id="suggestions-empty" class="suggestions-empty" hidden></p>
       </section>
 
+      <section class="share-card" aria-labelledby="share-heading">
+        <div>
+          <h2 id="share-heading">設定の共有</h2>
+          <p>券種・単価・釣り銭準備金を共有URLにして、スタッフの端末に配れます。枚数や集計結果はURLに含まれません。</p>
+        </div>
+        <div class="share-actions">
+          <button id="share-open-button" class="share-button is-primary" type="button" aria-haspopup="dialog">共有URLを作る</button>
+          <button id="import-open-button" class="share-button" type="button" aria-haspopup="dialog">リンクから読み込む</button>
+        </div>
+      </section>
+
       <footer class="privacy-note" aria-labelledby="privacy-heading">
         <h2 id="privacy-heading">データの取り扱い</h2>
         <ul>
           <li>入力した金額や枚数は自動で保存され、この端末のブラウザの中にだけ残ります。</li>
-          <li>通信するのはアプリ本体を読み込むときだけです。入力内容が外部のサーバーへ送信されることはありません。</li>
+          <li>アプリが入力内容を外部のサーバーへ送信することはありません。通信するのはアプリ本体を読み込むときだけです。</li>
+          <li>共有URLに含まれるのは券種・単価・釣り銭準備金だけです。枚数や集計結果は含まれません。</li>
           <li>開発者を含め、第三者が集計データを見たり利用したりすることはありません。アクセス解析や広告のプログラムも使っていません。</li>
           <li>「すべてリセット」するか、ブラウザのデータを消去すると、端末からも削除されます。</li>
         </ul>
@@ -115,7 +127,7 @@
     <div id="reset-sheet" class="sheet-scrim" hidden>
       <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="reset-sheet-title" aria-describedby="reset-sheet-desc">
         <h2 id="reset-sheet-title">リセット</h2>
-        <p id="reset-sheet-desc">消す範囲を選んでください。元には戻せません。</p>
+        <p id="reset-sheet-desc" class="sheet-desc">消す範囲を選んでください。元には戻せません。</p>
         <div class="sheet-actions">
           <button id="reset-counts-button" class="sheet-button sheet-primary" type="button">
             枚数だけリセット
@@ -129,6 +141,51 @@
         </div>
       </div>
     </div>
+
+    <div id="share-sheet" class="sheet-scrim" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="share-sheet-title" aria-describedby="share-sheet-desc">
+        <h2 id="share-sheet-title">設定の共有URL</h2>
+        <p id="share-sheet-desc" class="sheet-desc">このURLを開くと、次の設定が読み込まれます。</p>
+        <ul id="share-preview" class="preset-preview"></ul>
+        <p class="sheet-field-label">共有URL</p>
+        <p id="share-url" class="share-url"></p>
+        <p id="share-status" class="sheet-status" role="status"></p>
+        <div class="sheet-actions">
+          <button id="share-native-button" class="sheet-button sheet-primary" type="button" hidden>共有する</button>
+          <button id="share-copy-button" class="sheet-button sheet-secondary" type="button">URLをコピー</button>
+          <button id="share-close-button" class="sheet-button sheet-cancel" type="button">閉じる</button>
+        </div>
+        <p class="sheet-note">LINEで送ったリンクは、LINEの中ではなくSafariなどのブラウザで開きます。ホーム画面に追加したアプリで設定が入っていないときは、アプリの「リンクから読み込む」にこのURLを貼り付けてください。</p>
+      </div>
+    </div>
+
+    <div id="import-sheet" class="sheet-scrim is-top" hidden>
+      <form id="import-form" class="sheet" role="dialog" aria-modal="true" aria-labelledby="import-sheet-title" aria-describedby="import-sheet-desc" novalidate>
+        <h2 id="import-sheet-title">共有リンクから読み込む</h2>
+        <p id="import-sheet-desc" class="sheet-desc">受け取った共有URLを貼り付けてください。</p>
+        <label class="sheet-field-label" for="import-url">共有URL</label>
+        <textarea id="import-url" class="import-url" rows="3" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+        <p id="import-error" class="sheet-error" role="alert" hidden></p>
+        <div class="sheet-actions">
+          <button id="import-submit-button" class="sheet-button sheet-primary" type="submit">読み込む</button>
+          <button id="import-cancel-button" class="sheet-button sheet-cancel" type="button">キャンセル</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="preset-sheet" class="sheet-scrim" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="preset-sheet-title" aria-describedby="preset-sheet-desc">
+        <h2 id="preset-sheet-title">共有された設定を読み込みますか？</h2>
+        <p id="preset-sheet-desc" class="sheet-desc">今の券種・単価・釣り銭準備金が次の内容に置き換わり、入力した枚数はすべて消えます。</p>
+        <ul id="preset-preview" class="preset-preview"></ul>
+        <div class="sheet-actions">
+          <button id="preset-apply-button" class="sheet-button sheet-primary" type="button">読み込む</button>
+          <button id="preset-keep-button" class="sheet-button sheet-cancel" type="button">今の入力のまま使う</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
     <div id="update-banner" class="update-banner" role="status" hidden>
       <div class="update-banner-inner">
