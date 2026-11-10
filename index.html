@@ -101,14 +101,11 @@
         <p id="suggestions-empty" class="suggestions-empty" hidden></p>
       </section>
 
-      <section class="share-card" aria-labelledby="share-heading">
-        <div>
-          <h2 id="share-heading">設定の共有</h2>
-          <p>券種・単価・釣り銭準備金を共有URLにして、スタッフの端末に配れます。枚数や集計結果はURLに含まれません。</p>
-        </div>
+      <section class="share-row" aria-labelledby="share-heading">
+        <h2 id="share-heading">設定の共有</h2>
         <div class="share-actions">
-          <button id="share-open-button" class="share-button is-primary" type="button" aria-haspopup="dialog">共有URLを作る</button>
-          <button id="import-open-button" class="share-button" type="button" aria-haspopup="dialog">リンクから読み込む</button>
+          <button id="share-open-button" class="share-button" type="button" aria-haspopup="dialog">URLを作る</button>
+          <button id="import-open-button" class="share-button" type="button" aria-haspopup="dialog">URLから読み込む</button>
         </div>
       </section>
 
@@ -155,13 +152,13 @@
           <button id="share-copy-button" class="sheet-button sheet-secondary" type="button">URLをコピー</button>
           <button id="share-close-button" class="sheet-button sheet-cancel" type="button">閉じる</button>
         </div>
-        <p class="sheet-note">LINEで送ったリンクは、LINEの中ではなくSafariなどのブラウザで開きます。ホーム画面に追加したアプリで使うときは、アプリを開いて「リンクから読み込む」にこのURLを貼り付けてください。</p>
+        <p class="sheet-note">LINEで送ったリンクは、LINEの中ではなくSafariなどのブラウザで開きます。ホーム画面に追加したアプリで使うときは、アプリを開いて「URLから読み込む」にこのURLを貼り付けてください。</p>
       </div>
     </div>
 
     <div id="import-sheet" class="sheet-scrim is-top" hidden>
       <form id="import-form" class="sheet" role="dialog" aria-modal="true" aria-labelledby="import-sheet-title" aria-describedby="import-sheet-desc" novalidate>
-        <h2 id="import-sheet-title">共有リンクから読み込む</h2>
+        <h2 id="import-sheet-title">共有URLから読み込む</h2>
         <p id="import-sheet-desc" class="sheet-desc">受け取った共有URLを貼り付けてください。</p>
         <label class="sheet-field-label" for="import-url">共有URL</label>
         <textarea id="import-url" class="import-url" rows="3" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>

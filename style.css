@@ -379,18 +379,16 @@ input:focus { border-color: var(--field-focus-border); background: var(--field-f
 .suggestion-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 500; }
 .suggestions-empty { margin-top: 14px; padding: 13px; border-radius: 12px; background: var(--empty-bg); color: var(--muted); font-size: 12px; line-height: 1.6; }
 
-.privacy-note { margin: 28px 2px 0; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); }
+.privacy-note { margin: 14px 2px 0; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); }
 .privacy-note h2 { color: var(--ink); font-size: 12px; font-weight: 800; letter-spacing: .04em; }
 .privacy-note ul { display: grid; gap: 6px; margin: 10px 0 0; padding-left: 1.2em; font-size: 11px; line-height: 1.7; }
 
-/* 設定の共有 */
-.share-card { display: grid; gap: 14px; margin-top: 24px; padding: 18px 16px 16px; border: 1px solid var(--card-border); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); }
-.share-card h2 { font-size: 16px; }
-.share-card p { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.6; }
-.share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.share-button { min-height: 44px; padding: 0 10px; border: 1px solid var(--reset-border); border-radius: 12px; background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.share-button.is-primary { border-color: transparent; background: var(--step-plus-bg); color: var(--step-plus-fg); }
-.share-button:active { transform: scale(.97); }
+/* 設定の共有（画面下の控えめな1行） */
+.share-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; margin: 28px 2px 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.share-row h2 { font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.share-button { min-height: 38px; padding: 0 12px; border: 1px solid var(--reset-border); border-radius: 10px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.share-button:active { transform: scale(.97); background: var(--reset-active-bg); }
 
 /* 下から出るシート（リセット・共有・読み込み） */
 .sheet-scrim {
